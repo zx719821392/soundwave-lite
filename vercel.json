@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1",
+      "status": 200
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/search.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/music-url.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  }
+}
