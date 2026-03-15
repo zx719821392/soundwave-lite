@@ -2,11 +2,6 @@
   "version": 2,
   "buildCommand": "npm install",
   "env": {},
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs24.x"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
