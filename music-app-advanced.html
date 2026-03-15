@@ -318,6 +318,29 @@
             to { transform: rotate(360deg); }
         }
 
+        .loading-bar {
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 107, 53, 0.2);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 1px;
+            animation: progress-bar 2s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        @keyframes progress-bar {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
         .error {
             color: var(--secondary-color);
             padding: 12px;
@@ -473,6 +496,10 @@
         }
 
         async function searchMusic(keyword) {
+            // 添加人工延迟以显示加载动画（300-800ms）
+            const delay = Math.random() * 500 + 300;
+            await new Promise(resolve => setTimeout(resolve, delay));
+
             // 先查本地数据库
             for (const [key, songs] of Object.entries(localSongDB)) {
                 if (keyword.includes(key) || key.includes(keyword)) {
@@ -594,7 +621,19 @@
             const keyword = searchInput.value.trim();
             if (!keyword) return;
 
-            content.innerHTML = '<div class="loading"><div class="spinner"></div>搜索中...</div>';
+            // 显示加载状态和进度条
+            content.innerHTML = `
+                <div style="padding: 24px 16px;">
+                    <div class="loading-bar">
+                        <div class="loading-bar-fill"></div>
+                    </div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        搜索中...
+                    </div>
+                </div>
+            `;
+            
             const results = await searchMusic(keyword);
             renderMusicGrid(results, 'searchTab');
             state.currentTab = 'search';
