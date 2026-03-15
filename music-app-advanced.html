@@ -461,32 +461,34 @@
         const nowArtist = document.getElementById('nowArtist');
         const content = document.getElementById('content');
 
-        // 本地演示数据库
+        // 本地演示数据库（包含可播放的音频 URL）
+        const demoAudioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        
         const localSongDB = {
             '周杰伦': [
-                { id: 'jw001', title: '说好不哭', artist: '周杰伦', cover: '🎤', url: 'https://music.163.com/song/1415945794' },
-                { id: 'jw002', title: '晴天', artist: '周杰伦', cover: '☀️', url: 'https://music.163.com/song/149136' },
-                { id: 'jw003', title: '稻香', artist: '周杰伦', cover: '🌾', url: 'https://music.163.com/song/2534449' }
+                { id: 'jw001', title: '说好不哭', artist: '周杰伦', cover: '🎤', audioUrl: demoAudioUrl },
+                { id: 'jw002', title: '晴天', artist: '周杰伦', cover: '☀️', audioUrl: demoAudioUrl },
+                { id: 'jw003', title: '稻香', artist: '周杰伦', cover: '🌾', audioUrl: demoAudioUrl }
             ],
             '周深': [
-                { id: 'zs001', title: '光年之外', artist: '周深', cover: '🌟', url: 'https://music.163.com/song/1374077962' },
-                { id: 'zs002', title: '大鱼', artist: '周深', cover: '🐠', url: 'https://music.163.com/song/1319766552' }
+                { id: 'zs001', title: '光年之外', artist: '周深', cover: '🌟', audioUrl: demoAudioUrl },
+                { id: 'zs002', title: '大鱼', artist: '周深', cover: '🐠', audioUrl: demoAudioUrl }
             ],
             '五月天': [
-                { id: 'wy001', title: '怎样', artist: '五月天', cover: '🎸', url: 'https://music.163.com/song/109951167' },
-                { id: 'wy002', title: '盛夏光年', artist: '五月天', cover: '☀️', url: 'https://music.163.com/song/24953502' }
+                { id: 'wy001', title: '怎样', artist: '五月天', cover: '🎸', audioUrl: demoAudioUrl },
+                { id: 'wy002', title: '盛夏光年', artist: '五月天', cover: '☀️', audioUrl: demoAudioUrl }
             ]
         };
 
         async function getTrendingMusic() {
             try {
                 const mockTrending = [
-                    { id: '001', title: '晴天', artist: '周杰伦', cover: '🎸', url: null },
-                    { id: '002', title: '稻香', artist: '周杰伦', cover: '🌾', url: null },
-                    { id: '003', title: '千里之外', artist: '周杰伦', cover: '🚀', url: null },
-                    { id: '004', title: '最长的电影', artist: '周杰伦', cover: '🎬', url: null },
-                    { id: '005', title: '双截棍', artist: '周杰伦', cover: '🥊', url: null },
-                    { id: '006', title: '夜曲', artist: '周杰伦', cover: '🌙', url: null }
+                    { id: '001', title: '晴天', artist: '周杰伦', cover: '🎸', audioUrl: demoAudioUrl },
+                    { id: '002', title: '稻香', artist: '周杰伦', cover: '🌾', audioUrl: demoAudioUrl },
+                    { id: '003', title: '千里之外', artist: '周杰伦', cover: '🚀', audioUrl: demoAudioUrl },
+                    { id: '004', title: '最长的电影', artist: '周杰伦', cover: '🎬', audioUrl: demoAudioUrl },
+                    { id: '005', title: '双截棍', artist: '周杰伦', cover: '🥊', audioUrl: demoAudioUrl },
+                    { id: '006', title: '夜曲', artist: '周杰伦', cover: '🌙', audioUrl: demoAudioUrl }
                 ];
                 return mockTrending;
             } catch (error) {
@@ -510,8 +512,8 @@
 
             // 通用演示数据
             return [
-                { id: Math.random(), title: keyword + ' - 热门版', artist: '各大歌手', cover: '🎵', url: null },
-                { id: Math.random(), title: keyword + ' - Remix版', artist: '各大歌手', cover: '🔊', url: null }
+                { id: Math.random(), title: keyword + ' - 热门版', artist: '各大歌手', cover: '🎵', audioUrl: demoAudioUrl },
+                { id: Math.random(), title: keyword + ' - Remix版', artist: '各大歌手', cover: '🔊', audioUrl: demoAudioUrl }
             ];
         }
 
@@ -547,10 +549,22 @@
             nowTitle.textContent = song.title;
             nowArtist.textContent = song.artist;
             
-            if (song.url) {
-                nowArtist.textContent = song.artist + ' ✓ 可在网易云播放';
+            // 设置音频源并播放
+            if (song.audioUrl) {
+                audioPlayer.src = song.audioUrl;
+                audioPlayer.load();
+                // 自动播放
+                audioPlayer.play().catch(err => {
+                    console.error('播放失败:', err);
+                    alert('音频加载失败，请检查网络连接');
+                });
+                state.isPlaying = true;
+                playBtn.textContent = '⏸';
+                nowArtist.textContent = song.artist + ' ✓ 播放中';
             } else {
-                nowArtist.textContent = song.artist + ' (演示歌曲)';
+                nowArtist.textContent = song.artist + ' (演示歌曲 - 无音源)';
+                state.isPlaying = false;
+                playBtn.textContent = '▶️';
             }
 
             updateFavoriteButton();
