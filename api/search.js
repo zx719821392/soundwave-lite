@@ -1,10 +1,11 @@
 /**
  * SoundWave 后端 API - 搜索接口
- * 集成真实的 QQ音乐 和 网易云 API
+ * 集成 Spotify、QQ音乐 和 网易云 API
  * 部署在 Vercel Serverless Functions
  */
 
-import axios from 'axios';
+const axios = require('axios');
+const { searchSpotifyMusic, getSpotifyTrending } = require('./spotify');
 
 // ==================== API 配置 ====================
 
@@ -142,7 +143,7 @@ async function getTrending() {
 
 // ==================== 主要 API 端点 ====================
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -157,14 +158,31 @@ export default async function handler(req, res) {
   try {
     const { keyword, action } = req.query;
 
-    // 搜索歌曲
+    // 搜索歌曲 - 优先 Spotify
     if (action === 'search' && keyword) {
-      const neteaseResults = await searchNetease(keyword);
-      await delay(200); // 避免限流
-      const qqResults = await searchQQMusic(keyword);
+      let spotifyResults = [];
+      let neteaseResults = [];
+      let qqResults = [];
 
-      // 合并结果，去重
-      const allResults = [...neteaseResults, ...qqResults];
+      try {
+        spotifyResults = await searchSpotifyMusic(keyword, 15);
+      } catch (e) {
+        console.warn('Spotify 搜索失败，尝试备选源');
+      }
+
+      // 如果 Spotify 结果不足，补充网易云和 QQ 音乐
+      if (spotifyResults.length < 10) {
+        try {
+          neteaseResults = await searchNetease(keyword);
+          await delay(200);
+          qqResults = await searchQQMusic(keyword);
+        } catch (e) {
+          console.warn('备选源搜索失败');
+        }
+      }
+
+      // 合并结果，优先 Spotify（有音频）
+      const allResults = [...spotifyResults, ...neteaseResults, ...qqResults];
       const uniqueResults = Array.from(
         new Map(allResults.map(item => [item.title + item.artist, item])).values()
       );
@@ -176,9 +194,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // 获取热门歌曲
+    // 获取热门歌曲 - 优先 Spotify
     if (action === 'trending') {
-      const trending = await getTrending();
+      let trending = [];
+
+      try {
+        trending = await getSpotifyTrending(30);
+      } catch (e) {
+        console.warn('Spotify 热门歌曲获取失败，尝试备选源');
+        trending = await getTrending();
+      }
+
       return res.status(200).json({
         success: true,
         data: trending,
