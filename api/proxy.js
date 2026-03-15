@@ -16,13 +16,26 @@ async function getNeteaseAudioUrl(id) {
       `https://netease-cloud-music-api.vercel.app/song/url`,
       {
         params: { id, br: 320000 },
-        timeout: TIMEOUT
+        timeout: TIMEOUT,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://music.163.com/'
+        }
       }
     );
 
     if (response.data.data && response.data.data[0]) {
       const url = response.data.data[0].url;
-      if (url) return url;
+      if (url) {
+        // 验证 URL 是否有效
+        try {
+          await axios.head(url, { timeout: 3000 });
+          return url;
+        } catch {
+          console.warn('网易云音频 URL 无效或不可访问');
+          return null;
+        }
+      }
     }
   } catch (error) {
     console.error('获取网易云音频 URL 失败:', error.message);
@@ -62,21 +75,36 @@ async function proxyAudio(audioUrl, res) {
       timeout: TIMEOUT,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://music.163.com/'
-      }
+        'Referer': 'https://music.163.com/',
+        'Range': 'bytes=0-'
+      },
+      maxRedirects: 5
     });
 
     // 转发响应头
     res.setHeader('Content-Type', response.headers['content-type'] || 'audio/mpeg');
-    res.setHeader('Content-Length', response.headers['content-length']);
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Accept-Ranges', 'bytes');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
 
     // 流式转发
     response.data.pipe(res);
+    
+    response.data.on('error', (error) => {
+      console.error('流式传输错误:', error.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: '音频传输失败' });
+      }
+    });
   } catch (error) {
     console.error('代理音频失败:', error.message);
-    res.status(500).json({ error: '无法获取音频' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: '无法获取音频: ' + error.message });
+    }
   }
 }
 
