@@ -1,11 +1,9 @@
 {
   "version": 2,
-  "builds": [],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/music-app-advanced.html",
-      "status": 200
+      "dest": "/music-app-advanced.html"
     }
   ]
 }
