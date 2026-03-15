@@ -480,41 +480,64 @@
             ]
         };
 
+        // API 基础 URL（自动适配环境）
+        const API_BASE = window.location.origin;
+
         async function getTrendingMusic() {
             try {
-                const mockTrending = [
-                    { id: '001', title: '晴天', artist: '周杰伦', cover: '🎸', audioUrl: demoAudioUrl },
-                    { id: '002', title: '稻香', artist: '周杰伦', cover: '🌾', audioUrl: demoAudioUrl },
-                    { id: '003', title: '千里之外', artist: '周杰伦', cover: '🚀', audioUrl: demoAudioUrl },
-                    { id: '004', title: '最长的电影', artist: '周杰伦', cover: '🎬', audioUrl: demoAudioUrl },
-                    { id: '005', title: '双截棍', artist: '周杰伦', cover: '🥊', audioUrl: demoAudioUrl },
-                    { id: '006', title: '夜曲', artist: '周杰伦', cover: '🌙', audioUrl: demoAudioUrl }
-                ];
-                return mockTrending;
+                console.log('🔄 加载热门歌曲...');
+                const response = await fetch(`${API_BASE}/api/search?action=trending`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    console.log('✓ 热门歌曲加载成功:', data.data.length, '首');
+                    return data.data;
+                }
             } catch (error) {
-                console.error('获取热门歌曲失败:', error);
-                return [];
+                console.error('❌ 后端请求失败:', error);
             }
+            
+            // 回退到本地演示数据
+            console.log('⚠️ 使用本地演示数据');
+            return [
+                { id: '001', title: '晴天', artist: '周杰伦', cover: '🎸', audioUrl: demoAudioUrl },
+                { id: '002', title: '稻香', artist: '周杰伦', cover: '🌾', audioUrl: demoAudioUrl },
+                { id: '003', title: '千里之外', artist: '周杰伦', cover: '🚀', audioUrl: demoAudioUrl },
+                { id: '004', title: '最长的电影', artist: '周杰伦', cover: '🎬', audioUrl: demoAudioUrl },
+                { id: '005', title: '双截棍', artist: '周杰伦', cover: '🥊', audioUrl: demoAudioUrl },
+                { id: '006', title: '夜曲', artist: '周杰伦', cover: '🌙', audioUrl: demoAudioUrl }
+            ];
         }
 
         async function searchMusic(keyword) {
-            // 添加人工延迟以显示加载动画（300-800ms）
-            const delay = Math.random() * 500 + 300;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            if (!keyword.trim()) {
+                return [];
+            }
 
-            // 先查本地数据库
+            try {
+                console.log('🔄 搜索:', keyword);
+                const response = await fetch(
+                    `${API_BASE}/api/search?action=search&keyword=${encodeURIComponent(keyword)}`
+                );
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    console.log('✓ 搜索结果:', data.data.length, '首');
+                    return data.data;
+                }
+            } catch (error) {
+                console.error('❌ 搜索失败:', error);
+            }
+            
+            // 回退到本地数据库
             for (const [key, songs] of Object.entries(localSongDB)) {
                 if (keyword.includes(key) || key.includes(keyword)) {
-                    console.log('✓ 本地数据库匹配:', key);
+                    console.log('⚠️ 使用本地数据库:', key);
                     return songs;
                 }
             }
-
-            // 通用演示数据
-            return [
-                { id: Math.random(), title: keyword + ' - 热门版', artist: '各大歌手', cover: '🎵', audioUrl: demoAudioUrl },
-                { id: Math.random(), title: keyword + ' - Remix版', artist: '各大歌手', cover: '🔊', audioUrl: demoAudioUrl }
-            ];
+            
+            return [];
         }
 
         function renderMusicGrid(songs, containerId) {

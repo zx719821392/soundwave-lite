@@ -1,6 +1,17 @@
 {
   "version": 2,
+  "buildCommand": "npm install",
+  "env": {},
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/music-app-advanced.html"
