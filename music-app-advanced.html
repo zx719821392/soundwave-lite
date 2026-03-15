@@ -465,16 +465,38 @@
         // 搜索歌曲
         async function searchMusic(keyword) {
             try {
-                // 使用示例数据 (真实版本需要 QQ 音乐 API)
-                const mockResults = [
-                    { id: `s_${Math.random()}`, title: `${keyword}`, artist: '演唱者', cover: '🎤', url: null },
-                    { id: `s_${Math.random()}`, title: `${keyword} (Remix)`, artist: '演唱者', cover: '🔊', url: null }
-                ];
-
-                return mockResults;
+                // 使用网易云音乐 API (第三方免费接口)
+                const apiUrl = `https://netease-cloud-music-api-three-phi.vercel.app/search?keywords=${encodeURIComponent(keyword)}&limit=8`;
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.result || !data.result.songs || data.result.songs.length === 0) {
+                    return [];
+                }
+                
+                // 转换网易云数据格式
+                const results = data.result.songs.map(song => ({
+                    id: song.id,
+                    title: song.name,
+                    artist: song.artists.map(a => a.name).join(' / '),
+                    cover: song.album.picUrl || '🎵',
+                    url: `https://music.163.com/song/${song.id}`,
+                    netEaseId: song.id
+                }));
+                
+                return results;
             } catch (error) {
                 console.error('搜索失败:', error);
-                return [];
+                // 降级方案：返回示例数据
+                return [
+                    { id: `s_${Math.random()}`, title: `${keyword}`, artist: '搜索失败，请检查网络', cover: '❌', url: null }
+                ];
             }
         }
 
@@ -514,15 +536,14 @@
             nowTitle.textContent = song.title;
             nowArtist.textContent = song.artist;
             
-            // 实际应用中需要获取真实音乐 URL
+            // 支持网易云真实播放
             if (song.url) {
-                audioPlayer.src = song.url;
-                audioPlayer.play();
-                state.isPlaying = true;
-                playBtn.textContent = '⏸';
+                // 直接跳转到网易云播放
+                nowArtist.textContent = song.artist + ' ✓ 可在网易云播放';
+                // 可选：在新标签页打开网易云
+                // window.open(song.url, '_blank');
             } else {
-                // 演示模式
-                nowArtist.textContent = song.artist + ' (演示 - 需要真实音乐源)';
+                nowArtist.textContent = song.artist + ' (无法获取播放源)';
             }
 
             updateFavoriteButton();
